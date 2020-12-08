@@ -217,12 +217,14 @@ class SystemModule
 	public function checkReady()
 	{
 		//check global info
-		$owner = posix_getgrgid( filegroup( __FILE__ ) );
-		if($owner)
-		{
-			if($owner["name"] != "www-data")
+		if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN'){
+			$owner = posix_getgrgid( filegroup( __FILE__ ) );
+			if($owner)
 			{
-				debug("The group of this script is not 'www-data', this could be a problem. Ensure that all files inside this folder belong to the group 'www-data' by running this command from inside the folder: su chown -R :www-data *");
+				if($owner["name"] != "www-data")
+				{
+					debug("The group of this script is not 'www-data', this could be a problem. Ensure that all files inside this folder belong to the group 'www-data' by running this command from inside the folder: su chown -R :www-data *");
+				}
 			}
 		}
 
@@ -246,11 +248,11 @@ class SystemModule
 	public function restartSystem()
 	{
 		$tmp = Array();
-		debug("Restarting system" );
+		debug("Resetting system" );
 		dispatchEventToModules("preRestart",$tmp); //remove all
 		dispatchEventToModules("restart",$tmp); //create tables and folders
 		dispatchEventToModules("postRestart",$tmp); //fill stuff
-		debug("System restarted" );
+		debug("System reset done" );
 		return true;
 	}
 

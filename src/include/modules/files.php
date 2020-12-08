@@ -23,7 +23,7 @@ class FilesModule
 
 	//called always
 	function __construct() {
-		$_REQUEST["folder"] = $_REQUEST["folder"] == "" ? "." : $_REQUEST["folder"];
+		if (isset($_REQUEST["folder"])) $_REQUEST["folder"] = $_REQUEST["folder"] == "" ? "." : $_REQUEST["folder"];
 	}
 
 	public function processAction($action)
@@ -2575,8 +2575,10 @@ class FilesModule
 
 		$database = getSQLDB();
 		$result = $database->query( $query );
-		if(!$result)
+		if(!$result){
+			debug("error in INSERT unit: ".$database->error,"red");
 			return null;
+		}
 
 		$unit_id = -1;
 		if ($database->insert_id != 0)
@@ -2584,7 +2586,7 @@ class FilesModule
 
 		if ($unit_id == -1)
 		{
-			debug("error inserting in the db a unit");
+			debug("error inserting in the db a unit","red");
 			$this->last_error = "DB PROBLEM";
 			return null;
 		}
@@ -2624,12 +2626,12 @@ class FilesModule
 		$result = $database->query( $query );
 		if(!$result)
 		{
-			debug("error deleting");
+			debug("error deleting","red");
 			return false;
 		}
 		if($database->affected_rows == 0)
 		{
-			debug("weird deleting");
+			debug("weird deleting","red");
 			return false;
 		}
 
@@ -2639,7 +2641,7 @@ class FilesModule
 		$result = $database->query( $query );
 		if(!$result)
 		{
-			debug("error deleting");
+			debug("error deleting","red");
 			return false;
 		}
 
@@ -2757,7 +2759,7 @@ class FilesModule
 				$id = $database->insert_id;
 			if ($id == -1)
 			{
-				debug("error inserting privileges in the db");
+				debug("error inserting privileges in the db","red");
 				$this->last_error = "DB PROBLEM";
 				return false;
 			}
@@ -2912,7 +2914,7 @@ class FilesModule
 		//SAFETY FIRST
 		if(!$this->validateFilename( $filename) || strpos($folder,"..") != FALSE)
 		{
-			debug("Filename contains invalid characters");
+			debug("Filename contains invalid characters","red");
 			$this->last_error = "Invalid filename";
 			return null;
 		}
@@ -2934,7 +2936,7 @@ class FilesModule
 		$unit = $this->getUnit( $unit_id ); // $user_id) //this functions doesnt control privileges
 		if(!$unit)
 		{
-			debug("ERROR: Unit not found: " . $unit_id);
+			debug("ERROR: Unit not found: " . $unit_id,"red");
 			return null;
 		}
 
@@ -2949,7 +2951,7 @@ class FilesModule
 			$file_info = $this->getFileInfoByFullpath($fullpath);
 			if(!$file_info)
 			{
-				debug("something weird happened");
+				debug("something weird happened","red");
 				$this->last_error = "ERROR: file found but no SQL entry";
 				return null;
 			}
@@ -2960,7 +2962,7 @@ class FilesModule
 				//WARNING!!! WHAT ABOUT THE QUOTA, IT WILL BE APPLYED TO HIM INSTEAD OF THE AUTHOR
 				if( !$unit->mode || $unit->mode == "" || $unit->mode == "READ") 
 				{
-					debug("user modifying file that doesnt belongs to him");
+					debug("user modifying file that doesnt belongs to him","red");
 					$this->last_error = "File belongs to other user";
 					return null;
 				}
@@ -2989,7 +2991,7 @@ class FilesModule
 				$id = $database->insert_id;
 			if ($id == -1)
 			{
-				debug("error inserting in the db");
+				debug("error inserting in the db","red");
 				$this->last_error = "DB PROBLEM";
 				return null;
 			}
@@ -2999,7 +3001,7 @@ class FilesModule
 				$this->createFolder( $unit->name . "/" . $folder );
 				if( !$this->folderExist( $unit->name . "/" . $folder ) )
 				{
-					debug("wrong folder name");
+					debug("wrong folder name","red");
 					$this->last_error = "Error in Folder name";
 					return null;
 				}
@@ -3019,7 +3021,8 @@ class FilesModule
 
 		if( $created == false )
 		{
-			debug( "file size is 0 after trying to write it to HD: " . $fullpath );
+			debug( "file size is 0 after trying to write it to HD: " . $fullpath ,"red");
+			debug( "file size is 0 after trying to write it to HD: " . $fullpath ,"red");
 			$this->last_error = "PROBLEM WRITTING FILE";
 			$query = "DELETE FROM `".DB_PREFIX."files` WHERE 'id' = " . $id;
 			$result = $database->query( $query );
@@ -3060,7 +3063,7 @@ class FilesModule
 		//save file in hard drive
 		if( !self::writeFile( $fullpath, $fileData ) )
 		{
-			debug("file couldnt be written");
+			debug("file couldnt be written","red");
 			$this->last_error = "PROBLEM WRITTING FILE";
 			return false;
 		}
@@ -3103,7 +3106,7 @@ class FilesModule
 		//save file in hard drive
 		if( !self::writeFilePart( $fullpath, $fileData, $offset ) )
 		{
-			debug("file couldnt be written");
+			debug("file couldnt be written","red");
 			$this->last_error = "PROBLEM WRITTING FILE";
 			return false;
 		}
@@ -3314,7 +3317,7 @@ class FilesModule
 
 		if( !$result )
 		{
-			debug("Error saving generated preview: " . $tn_path );
+			debug("Error saving generated preview: " . $tn_path ,"red");
 			return false;
 		}
 
@@ -3793,7 +3796,7 @@ class FilesModule
 			`metadata` TEXT NOT NULL,
 			`used_size` INT NOT NULL,
 			`total_size` INT NOT NULL,
-			`timestamp` TIMESTAMP NOT NULL)
+			`timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)
 			ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1";
 
 		$result = $database->query( $query );		
@@ -3812,7 +3815,7 @@ class FilesModule
 			`id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
 			`user_id` INT NOT NULL,
 			`unit_id` INT NOT NULL,
-			`timestamp` TIMESTAMP NOT NULL,
+			`timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			`mode` ENUM('READ','WRITE','ADMIN') NOT NULL
 			) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1";
 
@@ -3837,7 +3840,7 @@ class FilesModule
 			`metadata` TEXT NOT NULL,
 			`author_id` INT NOT NULL,
 			`size` INT NOT NULL,
-			`timestamp` TIMESTAMP NOT NULL,
+			`timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			`status` ENUM('DRAFT','PRIVATE','PUBLIC','BLOCKED') NOT NULL
 			) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1";
 

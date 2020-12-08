@@ -58,7 +58,7 @@ html,body {
 
 #forgotpassword-dialog {
 	width: 300px;
-	background-color: white;
+	/*background-color: white;*/
 }
 
 .login-dialog input.form-control, .login-dialog .btn-lg {

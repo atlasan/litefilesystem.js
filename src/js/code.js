@@ -38,7 +38,7 @@ function systemReady()
 		$(this).css("opacity",0.5);
 		login_button.start();
 		var values = getFormValues(this);
-		console.log(values);
+		//console.log(values); // please dont
 
 		e.preventDefault();
 

@@ -885,8 +885,10 @@ class UsersModule
 		$query = "SELECT * FROM `".DB_PREFIX."users` ".$userquery." ".$passquery." LIMIT 1";
 		$result = $database->query( $query );
 
-		if ($result === false) 
+		if ($result === false){
+			debug("err on login query: ".$database->error);
 			return null;
+		}
 
 		$user = $result->fetch_object();
 		if(!$user)
@@ -899,6 +901,10 @@ class UsersModule
 		$token = md5( $user->username . time() . GLOBAL_PASS_SALT . rand() );
 		$query = "INSERT INTO `".DB_PREFIX."sessions` (`id` , `user_id` , `token`) VALUES ( NULL , ". intval($user->id).", '".$token."')";
 		$result = $database->query( $query );
+		if($result === false){
+			debug("error creating userkey: ".$database->error,"red");
+			return null;
+		}
 		if ($database->insert_id == 0)
 		{
 			debug("cannot insert session");
@@ -1164,10 +1170,11 @@ class UsersModule
 		$result = dispatchEventToModules("onUserCreated",$user);
 
 		//something went wrong creating the user
-		if ( $result == false )
+		if ( $result === false || (is_array($result) && isset($result["status"]) && $result["status"]==-1) )
 		{
+			if (isset($result["msg"])) debug("something went wrong creating the user: ".$result["msg"]);
 			$this->deleteUser( $user );
-			return false;		
+			return false;
 		}
 
 		return $id;
@@ -1474,7 +1481,7 @@ class UsersModule
 		  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
 		  `user_id` int(10) NOT NULL,
 		  `token` varchar(255) NOT NULL,
-		  `timestamp` TIMESTAMP NOT NULL,
+		  `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		  PRIMARY KEY (id)
 		) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1";
 
@@ -1494,7 +1501,7 @@ class UsersModule
 		  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
 		  `user_id` int(10) NOT NULL,
 		  `token` varchar(255) NOT NULL,
-		  `timestamp` TIMESTAMP NOT NULL,
+		  `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		  PRIMARY KEY (id)
 		) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1";
 
@@ -1521,7 +1528,8 @@ class UsersModule
 		{
 			$this->result["msg"] = "Admin user not created";
 			$this->result["status"] = -1;
-			return;
+			debug($this->result["msg"],"red");
+			return $this->result;
 		}
 
 		//create public unit
@@ -1531,8 +1539,13 @@ class UsersModule
 			{
 				$this->result["msg"] = "Guest user not created";
 				$this->result["status"] = -1;
-				return;
+				debug($this->result["msg"],"red");
+				return $this->result;
 			}
+			
+		$this->result["msg"] = "Default users created";
+		$this->result["status"] = 1;
+		return $this->result;
 	}
 
 	//used to upgrade tables and so

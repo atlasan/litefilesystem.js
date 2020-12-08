@@ -122,20 +122,24 @@ function loadModules($str)
 	return $result;
 }
 
-//returns false if any of the events returned false, otherwise true
+//returns false if any of the events returned false, otherwise return an array of returns, if it called only one module keep the array simple
 function dispatchEventToModules($event_type, &$data )
 {
 	$modules = loadModules("*");
-	$result = true;
+	$result = array();
 	foreach($modules as $module)
 	{
 		if( !method_exists($module, $event_type) )
 			continue;
 
 		$r = call_user_func_array( array($module , $event_type), array(&$data));
-		if( $r === false)
+		if($r === false){
 			$result = false;
+		}elseif($result!==false){
+			$result[] = $r;
+		}
 	}
+	if ($result && count($result)==1) $result = $result[0];
 	return $result;
 }
 

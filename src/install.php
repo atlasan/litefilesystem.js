@@ -151,10 +151,20 @@ if(!$console)
 	}
 
 	//test folder owner
-	$owner = posix_getgrgid( filegroup( __FILE__) );
-	if($owner && $owner["name"] != "www-data")
-	{
-		showMessage("The group of this script is not 'www-data', this could be a problem. Ensure that all files inside this folder belong to the www-data by running this command from inside the folder: su chown -R :www-data *","danger");
+	// XXX: could check for write permission instead, or additionally
+	if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN'){
+		$owner = posix_getgrgid( filegroup( __FILE__) );
+		if($owner && $owner["name"] != "www-data")
+		{
+			showMessage("The group of this script is not 'www-data', this could be a problem. Ensure that all files inside this folder belong to the www-data by running this command from inside the folder: su chown -R :www-data *","danger");
+		}
+	}
+
+	// check if the admin user has been created (when getting errors on first lines, it will stop)
+	$users = getModule("user");
+	if(!$users->getUserByName("admin")){
+		showMessage("No admin found, launch with force option to wipe all data and begin fresh.","warning");
+		$is_ready = false;
 	}
 
 	if( $is_ready && !$force )
