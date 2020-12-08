@@ -938,8 +938,21 @@ class UsersModule
 			return false;
 		}
 
+		// use the mysqlServer time
+		$query = "SELECT UNIX_TIMESTAMP(timestamp) AS tstamp, UNIX_TIMESTAMP(NOW()) as now FROM `".DB_PREFIX."sessions` WHERE `token` = '". $token ."' LIMIT 1";
+		$result = $database->query( $query );
+		if ($result===false){
+			debug($database->error,"red");
+			return null;
+		}elseif($result->num_rows == 0){
+			return null;
+		}
+		$oTime = $result->fetch_object();
+		
+		$expTime = $oTime->tstamp + self::$SESSION_EXPIRATION_TIME * 60;
+		
 		//check if token is expired
-		if( ( $item->timestamp + self::$SESSION_EXPIRATION_TIME * 60 ) > time() )
+		if( $expTime < $oTime->now )
 		{
 			//faster than colling expire session, because we use id instead of token
 			$query = "DELETE FROM `".DB_PREFIX."sessions` WHERE `id` = ". $item->id;
